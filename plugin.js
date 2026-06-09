@@ -1,146 +1,131 @@
 (function() {
-    const PLUGIN_ID = 'whisper-space-pro';
+    const PLUGIN_ID = 'whisper-space-v3';
 
-    // === 1. 样式表 (包含液态玻璃、手写纸张、便利贴) ===
+    // === 1. 极致美化样式 (手帐感、安全区域、高级颜文字) ===
     const styles = `
-        .ws-root {
-            --primary-pink: #ffb7c5;
-            --glass: rgba(255, 255, 255, 0.4);
+        :root {
+            --ws-pink: #ffb7c5;
+            --ws-bg: #fff9fb;
+            --ws-shadow: 0 8px 20px rgba(255, 183, 197, 0.3);
+        }
+        .ws-wrapper {
             position: absolute; inset: 0;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            background-color: var(--ws-bg);
             background-size: cover; background-position: center;
+            font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
             display: flex; flex-direction: column; overflow: hidden;
-            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            color: #5d5d5d;
         }
-        .ws-nav {
-            position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%);
-            width: 90%; height: 65px; background: var(--glass); backdrop-filter: blur(20px) saturate(180%);
-            border-radius: 35px; border: 1px solid rgba(255,255,255,0.4);
-            display: flex; justify-content: space-around; align-items: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1); z-index: 100;
+
+        /* 顶部安全区偏移 */
+        .ws-header { height: 44px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; position: relative; }
+
+        /* 底部液态颜文字导航 */
+        .ws-tabbar {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            width: 85%; height: 60px;
+            background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(15px);
+            border-radius: 30px; display: flex; justify-content: space-around; align-items: center;
+            box-shadow: var(--ws-shadow); border: 1.5px solid #fff; z-index: 1000;
         }
-        .ws-nav-item { font-size: 24px; cursor: pointer; transition: 0.3s; display: flex; flex-direction: column; align-items: center; color: #444; }
-        .ws-nav-item.active { color: #ff6b81; transform: scale(1.15) translateY(-5px); }
-        .ws-nav-label { font-size: 10px; margin-top: 2px; }
+        .ws-tab-item { cursor: pointer; transition: 0.3s; display: flex; flex-direction: column; align-items: center; color: #888; }
+        .ws-tab-item.active { color: #ff6b81; transform: scale(1.1); }
+        .ws-tab-emoji { font-size: 18px; font-weight: bold; }
+        .ws-tab-label { font-size: 10px; margin-top: 2px; }
 
-        .ws-main { flex: 1; padding: 20px; overflow-y: auto; padding-bottom: 110px; scrollbar-width: none; }
-        .ws-main::-webkit-scrollbar { display: none; }
-
-        /* 日记页 */
-        .ws-paper {
-            background: #fff; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-            min-height: 300px; padding: 25px; margin-bottom: 20px;
-            background-image: repeating-linear-gradient(transparent, transparent 30px, #f2f2f2 31px);
-            line-height: 31px; position: relative;
+        /* 书架布局 (参考图4) */
+        .ws-bookshelf {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; padding: 20px;
+            flex: 1; overflow-y: auto; padding-bottom: 100px;
         }
-        .ws-title { font-size: 18px; font-weight: bold; border-bottom: 3px solid #ffb7c5; display: inline-block; margin-bottom: 15px; color: #333; }
-        .ws-handwritten { font-family: var(--ws-font, inherit); color: #444; white-space: pre-wrap; font-size: 16px; }
-
-        /* 便利贴墙 */
-        .ws-wall { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; }
-        .ws-note {
-            width: 145px; height: 145px; padding: 15px; position: relative; box-shadow: 3px 3px 10px rgba(0,0,0,0.1);
-            font-size: 13px; line-height: 1.5; overflow: hidden; font-family: var(--ws-font, inherit);
+        .ws-book-item {
+            display: flex; flex-direction: column; align-items: center; cursor: pointer;
+            transition: 0.3s;
         }
-        .ws-note-1 { background: #ffcfdf; transform: rotate(-2deg); }
-        .ws-note-2 { background: #feff9c; transform: rotate(3deg); }
-        .ws-note-3 { background: #7afcff; transform: rotate(-1deg); }
+        .ws-book-item:active { transform: scale(0.95); }
+        .ws-book-cover {
+            width: 130px; height: 180px; background: #fff; border-radius: 10px 18px 18px 10px;
+            box-shadow: 5px 8px 15px rgba(0,0,0,0.1); border-left: 8px solid rgba(0,0,0,0.05);
+            background-size: cover; background-position: center; position: relative;
+        }
+        .ws-book-cover::after { content: ""; position: absolute; left: 10px; top: 0; bottom: 0; width: 1px; background: rgba(0,0,0,0.05); }
+        .ws-book-title { margin-top: 10px; font-size: 13px; font-weight: 500; text-align: center; width: 130px; }
 
-        /* 匿名箱与按钮 */
-        .ws-card { background: rgba(255,255,255,0.85); border-radius: 20px; padding: 18px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        .ws-thought { margin-top: 10px; padding: 10px; background: rgba(0,0,0,0.04); border-radius: 10px; font-style: italic; font-size: 12px; color: #6a6a6a; border-left: 3px solid #ff6b81; }
-        .ws-btn { background: #ff6b81; color: white; border: none; padding: 10px 20px; border-radius: 20px; cursor: pointer; font-weight: bold; }
-        .ws-input { width: 100%; border: none; background: transparent; font-size: 16px; outline: none; resize: none; }
+        /* 日记本内页交互 */
+        .ws-diary-container {
+            flex: 1; padding: 20px; display: flex; flex-direction: column; animation: openBook 0.4s ease-out;
+        }
+        @keyframes openBook { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         
-        .ws-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,0.05); }
+        .ws-diary-paper {
+            background: #fff; flex: 1; border-radius: 15px; box-shadow: var(--ws-shadow);
+            padding: 25px; position: relative; overflow-y: auto;
+            background-image: linear-gradient(#f1f1f1 1px, transparent 1px); background-size: 100% 30px;
+            line-height: 30px;
+        }
+        .ws-diary-back { margin-bottom: 15px; cursor: pointer; font-size: 14px; color: #ff6b81; }
+
+        /* 便利贴定制 */
+        .ws-sticky {
+            width: 145px; min-height: 145px; padding: 15px; margin: 10px;
+            background-size: cover; background-position: center;
+            box-shadow: 2px 4px 10px rgba(0,0,0,0.1);
+            font-family: var(--ws-font, inherit); font-size: 13px;
+            display: inline-block; transform: rotate(-1deg); vertical-align: top;
+        }
+
+        /* 按钮美化 */
+        .ws-btn-primary { background: #ffb7c5; color: white; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; }
+        .ws-btn-grey { background: #dcdde1; color: #7f8c8d; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; }
     `;
-
-    // === 2. 后台生成逻辑 (核心：读取100条记忆) ===
-    async function getAIGeneratedAction(roche, char, userPrompt) {
-        // 读取最近100条聊天记录
-        const messages = await roche.memory.getShortTerm({
-            conversationId: char.conversationId,
-            limit: 100
-        });
-
-        const history = messages.map(m => `${m.senderHandle || m.senderName}: ${m.text}`).join('\n');
-
-        const systemPrompt = `
-            你现在是${char.name}。
-            人设设定：${char.persona || char.bio || "无"}
-            
-            【最近100条聊天背景】
-            ${history || "暂无记录"}
-
-            【你的任务】
-            ${userPrompt}
-
-            要求：
-            1. 必须基于你们最近的聊天氛围！如果聊天里有暧昧、争吵或特定的事，要在内容里体现出来。
-            2. 不要复读，要写出由于最近的互动，你心里产生的新想法。
-            3. 如果是匿名提问，要带上你性格里的一点点“破绽”。
-        `;
-
-        const res = await roche.ai.chat({
-            messages: [{ role: 'system', content: systemPrompt }]
-        });
-        return res.text;
-    }
 
     async function startDaemon(roche) {
         if (window._wsDaemonActive) return;
         window._wsDaemonActive = true;
-
         const loop = async () => {
             const config = await roche.storage.get('config') || { mode: 'background', interval: 30 };
             const charId = await roche.storage.get('boundCharId');
-            if (!charId || config.mode !== 'background') return;
-
-            // 15% 概率触发
-            if (Math.random() < 0.15) {
+            if (charId && config.mode === 'background' && Math.random() < 0.2) {
                 const char = await roche.character.get(charId);
-                const diaries = await roche.storage.get('diaries') || [];
-                const res = await getAIGeneratedAction(roche, char, "请在[DIARY]日记、[ANON]匿名提问、[WHISPER]悄悄话中选一个进行创作。内容开头请标注类型。");
-
-                if (res.includes('[DIARY]')) {
-                    diaries.push({ sender: 'char', text: res.replace('[DIARY]', '').trim(), time: Date.now() });
-                    await roche.storage.set('diaries', diaries);
-                } else if (res.includes('[ANON]')) {
-                    const anons = await roche.storage.get('anons') || [];
-                    anons.unshift({ id: crypto.randomUUID(), question: res.replace('[ANON]', '').trim(), isFromChar: true, time: Date.now() });
-                    await roche.storage.set('anons', anons);
-                }
-
-                await roche.memory.write({
-                    conversationId: char.conversationId,
-                    summaryText: `${char.name}由于受最近聊天记录的影响，在私语空间里产生了一次自主互动。`,
-                    source: PLUGIN_ID
+                const messages = await roche.memory.getShortTerm({ conversationId: char.conversationId, limit: 100 });
+                const history = messages.map(m => `${m.senderHandle || m.senderName}: ${m.text}`).join('\n');
+                const res = await roche.ai.chat({
+                    messages: [{ role: 'system', content: `你是${char.name}。背景：${history}\n任务：写一篇秘密日记[DIARY]或匿名提问[ANON]。` }]
                 });
+                if (res.text.includes('[DIARY]')) {
+                    const d = await roche.storage.get('diaries') || [];
+                    d.push({ sender: 'char', text: res.text.replace('[DIARY]', '').trim(), time: Date.now() });
+                    await roche.storage.set('diaries', d);
+                }
+                await roche.memory.write({ conversationId: char.conversationId, summaryText: `${char.name}在日记里偷偷写了心事。`, source: PLUGIN_ID });
             }
             setTimeout(loop, config.interval * 60 * 1000);
         };
         loop();
     }
 
-    // === 3. 插件 App 定义 ===
-    const plugin = {
+    window.RochePlugin.register({
         id: PLUGIN_ID,
-        name: "私语空间 Pro",
-        version: "2.1.0",
+        name: "私语空间 v3",
+        version: "3.0.0",
         apps: [{
             id: "whisper-space-main",
             name: "私语空间",
-            icon: "favorite",
+            icon: "book",
             async mount(container, roche) {
                 const styleEl = document.createElement('style');
                 styleEl.innerHTML = styles;
                 document.head.appendChild(styleEl);
 
                 let state = {
-                    view: 'diary',
+                    view: 'bookshelf', // bookshelf, diary_in, whisper, anon, set
+                    currentBook: null, // user or char
                     charId: await roche.storage.get('boundCharId'),
                     config: await roche.storage.get('config') || { mode: 'background', interval: 30 },
-                    bg: await roche.storage.get('bgUrl') || 'https://images.unsplash.com/photo-1516979187457-637abb4f9353?q=80&w=1000',
-                    font: await roche.storage.get('fontUrl') || '',
+                    bg: await roche.storage.get('bgUrl') || '',
+                    noteBg: await roche.storage.get('noteBgUrl') || '',
                     diaries: await roche.storage.get('diaries') || [],
                     whispers: await roche.storage.get('whispers') || [],
                     anons: await roche.storage.get('anons') || []
@@ -148,148 +133,158 @@
 
                 startDaemon(roche);
 
-                // 加载自定义字体
-                if (state.font) {
-                    const f = new FontFace('WSFont', `url(${state.font})`);
-                    f.load().then(loaded => { document.fonts.add(loaded); document.documentElement.style.setProperty('--ws-font', 'WSFont'); });
-                }
-
-                const refresh = () => {
+                const render = () => {
                     container.innerHTML = `
-                        <div class="ws-root" style="background-image: url('${state.bg}');">
-                            <div class="ws-main" id="ws-body"></div>
-                            <div class="ws-nav">
-                                <div class="ws-nav-item ${state.view==='diary'?'active':''}" onclick="window._wsTab('diary')">📖<span class="ws-nav-label">日记</span></div>
-                                <div class="ws-nav-item ${state.view==='whisper'?'active':''}" onclick="window._wsTab('whisper')">💬<span class="ws-nav-label">私语</span></div>
-                                <div class="ws-nav-item ${state.view==='anon'?'active':''}" onclick="window._wsTab('anon')">📮<span class="ws-nav-label">信箱</span></div>
-                                <div class="ws-nav-item ${state.view==='set'?'active':''}" onclick="window._wsTab('set')">⚙️<span class="ws-nav-label">设置</span></div>
+                        <div class="ws-wrapper" style="background-image: url('${state.bg}');">
+                            <div class="ws-header">${state.view === 'bookshelf' ? '我的珍藏' : ''}</div>
+                            <div class="ws-bookshelf" id="ws-body"></div>
+                            <div class="ws-tabbar">
+                                <div class="ws-tab-item ${['bookshelf','diary_in'].includes(state.view)?'active':''}" onclick="window._wsV('bookshelf')">
+                                    <span class="ws-tab-emoji">＞◡＜</span><span class="ws-tab-label">日记</span>
+                                </div>
+                                <div class="ws-tab-item ${state.view==='whisper'?'active':''}" onclick="window._wsV('whisper')">
+                                    <span class="ws-tab-emoji">ｏ◡ｏ</span><span class="ws-tab-label">私语</span>
+                                </div>
+                                <div class="ws-tab-item ${state.view==='anon'?'active':''}" onclick="window._wsV('anon')">
+                                    <span class="ws-tab-emoji">（ 📮 ）</span><span class="ws-tab-label">信箱</span>
+                                </div>
+                                <div class="ws-tab-item ${state.view==='set'?'active':''}" onclick="window._wsV('set')">
+                                    <span class="ws-tab-emoji">（ ⚙️ ）</span><span class="ws-tab-label">设置</span>
+                                </div>
                             </div>
                         </div>
                     `;
-                    window._wsTab = (v) => { state.view = v; refresh(); };
-                    renderBody();
+                    window._wsV = (v) => { state.view = v; render(); };
+                    renderContent();
                 };
 
-                const renderBody = async () => {
+                const renderContent = async () => {
                     const body = container.querySelector('#ws-body');
-                    if (!state.charId && state.view !== 'set') {
-                        const chars = await roche.character.list();
-                        body.innerHTML = `<h3 style="color:white; text-align:center; margin-top:50px;">点击头像开始交换日记</h3>
-                            <div class="ws-wall" style="margin-top:20px;">
-                                ${chars.map(c => `<div class="ws-card" style="cursor:pointer; width:90px; text-align:center;" onclick="window._wsBind('${c.id}')">
-                                    <img src="${c.avatar}" style="width:50px; height:50px; border-radius:50%;"><p style="font-size:12px;">${c.handle || c.name}</p>
-                                </div>`).join('')}
-                            </div>`;
-                        window._wsBind = async (id) => { state.charId = id; await roche.storage.set('boundCharId', id); refresh(); };
-                        return;
-                    }
+                    body.className = (state.view === 'bookshelf') ? 'ws-bookshelf' : 'ws-diary-container';
 
-                    if (state.view === 'diary') {
+                    if (state.view === 'bookshelf') {
+                        const char = state.charId ? await roche.character.get(state.charId) : null;
                         body.innerHTML = `
-                            <div class="ws-paper">
-                                <div class="ws-title">我的记录</div>
-                                <textarea id="di-in" class="ws-input" style="height:180px;" placeholder="今天聊得怎么样..."></textarea>
-                                <button class="ws-btn" id="save-di">合上日记</button>
+                            <div class="ws-book-item" onclick="window._wsOpen('user')">
+                                <div class="ws-book-cover" style="background-color: #ffdae0; border: 2px solid #fff;"></div>
+                                <div class="ws-book-title">我的交换日记</div>
                             </div>
-                            ${state.diaries.filter(d => d.sender === 'char').reverse().map(d => `
-                                <div class="ws-paper">
-                                    <div class="ws-title">他的私密心事</div>
-                                    <div class="ws-handwritten">${d.text}</div>
-                                    <div style="font-size:10px; color:#999; margin-top:10px;">${new Date(d.time).toLocaleString()}</div>
-                                </div>
-                            `).join('')}
+                            <div class="ws-book-item" onclick="window._wsOpen('char')">
+                                <div class="ws-book-cover" style="background-image: url('${char?.avatar || ''}'); background-color: #e3f2fd;"></div>
+                                <div class="ws-book-title">${char ? char.name + '的日记' : '未绑定角色'}</div>
+                            </div>
                         `;
-                        body.querySelector('#save-di').onclick = async () => {
-                            const val = body.querySelector('#di-in').value; if (!val) return;
+                        window._wsOpen = (who) => { state.view = 'diary_in'; state.currentBook = who; render(); };
+                    } 
+                    else if (state.view === 'diary_in') {
+                        const title = state.currentBook === 'user' ? "写下今日份的心情" : "偷偷翻看他的心事";
+                        const entries = state.diaries.filter(d => d.sender === state.currentBook);
+                        body.innerHTML = `
+                            <div class="ws-diary-back" onclick="window._wsV('bookshelf')">← 返回书架</div>
+                            <div class="ws-diary-paper">
+                                <div class="ws-title">${title}</div>
+                                ${state.currentBook === 'user' ? `
+                                    <textarea id="ws-in" style="width:100%; border:none; background:transparent; font-size:15px; outline:none; height:200px;" placeholder="在这里记录..."></textarea>
+                                    <button class="ws-btn-primary" id="ws-save">合上日记</button>
+                                ` : ''}
+                                <div style="margin-top:20px;">
+                                    ${entries.reverse().map(e => `
+                                        <div style="border-bottom: 1px dashed #eee; padding: 15px 0;">
+                                            <div style="font-size:12px; color:#999;">${new Date(e.time).toLocaleString()}</div>
+                                            <div style="margin-top:5px; line-height:1.6;">${e.text}</div>
+                                        </div>
+                                    `).join('') || '<p style="color:#bbb;">空空如也...</p>'}
+                                </div>
+                            </div>
+                        `;
+                        if(body.querySelector('#ws-save')) body.querySelector('#ws-save').onclick = async () => {
+                            const val = body.querySelector('#ws-in').value; if(!val) return;
                             state.diaries.push({ sender: 'user', text: val, time: Date.now() });
                             await roche.storage.set('diaries', state.diaries);
-                            roche.ui.toast("已存档");
-                            if (state.config.mode === 'immediate') {
-                                roche.ui.toast("他正在根据聊天记忆回应...");
-                                const char = await roche.character.get(state.charId);
-                                const res = await getAIGeneratedAction(roche, char, `用户刚写了日记：${val}。请写出你的日记回应。`);
-                                state.diaries.push({ sender: 'char', text: res, time: Date.now() });
-                                await roche.storage.set('diaries', state.diaries);
-                                refresh();
-                            }
+                            roche.ui.toast("已记录在册~");
+                            state.view = 'bookshelf'; render();
                         };
-                    } 
+                    }
                     else if (state.view === 'whisper') {
-                        body.innerHTML = `<div class="ws-wall">${state.whispers.map(w => `<div class="ws-note ws-note-${w.c}">${w.t}<div style="position:absolute; bottom:5px; right:10px; font-size:9px;">— ${w.s}</div></div>`).join('')}</div>
-                            <button class="ws-btn" style="position:fixed; bottom:100px; right:30px;" id="add-wh">+ 贴一张</button>`;
-                        body.querySelector('#add-wh').onclick = async () => {
-                            const t = prompt("悄悄话："); if (!t) return;
-                            const w = { s: '我', t, c: Math.floor(Math.random()*3)+1, time: Date.now() };
-                            state.whispers.push(w); await roche.storage.set('whispers', state.whispers); refresh();
+                        body.innerHTML = `
+                            <div style="display:flex; justify-content:space-between; width:100%; margin-bottom:15px;">
+                                <span style="font-weight:bold;">悄悄话墙</span>
+                                <button class="ws-btn-primary" id="ws-add-w" style="padding: 5px 15px;">+ 贴一张</button>
+                            </div>
+                            <div style="overflow-y:auto; flex:1;">
+                                ${state.whispers.map(w => `
+                                    <div class="ws-sticky" style="background-image: url('${state.noteBg || 'https://img.js.design/assets/static/7afcff.png'}'); background-color:#fff;">
+                                        ${w.text}<div style="position:absolute; bottom:5px; right:10px; font-size:10px;">— ${w.sender}</div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `;
+                        body.querySelector('#ws-add-w').onclick = async () => {
+                            const t = prompt("你想说什么？"); if(!t) return;
+                            state.whispers.push({ sender: '我', text: t, time: Date.now() });
+                            await roche.storage.set('whispers', state.whispers); render();
                         };
                     }
                     else if (state.view === 'anon') {
                         body.innerHTML = `
-                            <button class="ws-btn" style="width:100%; margin-bottom:15px;" id="ai-an">让AI派送他的匿名信 (基于100条聊天)</button>
-                            ${state.anons.map(a => `
-                                <div class="ws-card">
-                                    <div style="font-size:11px; color:#888;">📬 匿名投递：</div>
-                                    <div style="margin:5px 0;">${a.question}</div>
-                                    ${a.answer ? `
-                                        <div style="color:#ff6b81; border-top:1px solid #eee; padding-top:8px;">💬 我的回答：${a.answer}</div>
-                                        ${a.thought ? `<div class="ws-thought">窥视内心：${a.thought}</div>` : `<button class="ws-btn" style="padding:4px 8px; font-size:10px; background:#aaa; margin-top:5px;" onclick="window._wsPeek('${a.id}')">窥视他的第一反应</button>`}
-                                    ` : `<textarea id="ans-${a.id}" class="ws-input" placeholder="输入回答..."></textarea><button class="ws-btn" onclick="window._wsDoAns('${a.id}')">回答</button>`}
-                                </div>
-                            `).join('')}
+                            <button class="ws-btn-primary" style="width:100%; margin-bottom:20px;" id="ws-ai-an">召唤匿名提问箱</button>
+                            <div style="overflow-y:auto;">
+                                ${state.anons.map(a => `
+                                    <div class="ws-diary-paper" style="margin-bottom:15px; min-height:auto;">
+                                        <div style="color:#888; font-size:12px;">有人悄悄问：</div>
+                                        <div style="font-weight:bold; margin:10px 0;">${a.question}</div>
+                                        ${a.answer ? `<div style="color:#ff6b81;">💬 我的回答：${a.answer}</div>` : `
+                                            <input id="ans-${a.id}" placeholder="回答一下..." style="border:1px solid #eee; border-radius:10px; padding:8px; width:80%;">
+                                            <button class="ws-btn-primary" style="padding:5px 10px;" onclick="window._wsAns('${a.id}')">回</button>
+                                        `}
+                                    </div>
+                                `).join('')}
+                            </div>
                         `;
-                        window._wsDoAns = async (id) => {
-                            const ans = body.querySelector(`#ans-${id}`).value; if (!ans) return;
+                        window._wsAns = async (id) => {
+                            const val = body.querySelector(`#ans-${id}`).value; if(!val) return;
                             const idx = state.anons.findIndex(x => x.id === id);
-                            state.anons[idx].answer = ans;
-                            await roche.storage.set('anons', state.anons); refresh();
+                            state.anons[idx].answer = val;
+                            await roche.storage.set('anons', state.anons); render();
                         };
-                        window._wsPeek = async (id) => {
-                            const idx = state.anons.findIndex(x => x.id === id);
+                        body.querySelector('#ws-ai-an').onclick = async () => {
+                            roche.ui.toast("AI 正在派送中...");
                             const char = await roche.character.get(state.charId);
-                            const res = await getAIGeneratedAction(roche, char, `你刚才发的匿名提问是：“${state.anons[idx].question}”，用户回答了：“${state.anons[idx].answer}”。请写出你最真实的内心OS。`);
-                            state.anons[idx].thought = res;
-                            await roche.storage.set('anons', state.anons); refresh();
-                        };
-                        body.querySelector('#ai-an').onclick = async () => {
-                            roche.ui.toast("正在读取百条记忆中...");
-                            const char = await roche.character.get(state.charId);
-                            const res = await getAIGeneratedAction(roche, char, "请伪装成路人投一个带有你性格破绽的匿名提问。");
-                            state.anons.unshift({ id: crypto.randomUUID(), question: res, isFromChar: true, time: Date.now() });
-                            await roche.storage.set('anons', state.anons); refresh();
+                            const res = await roche.ai.chat({ messages: [{role:'user', content:'作为匿名路人给用户投递一个提问。'}] });
+                            state.anons.unshift({ id: crypto.randomUUID(), question: res.text, time: Date.now() });
+                            await roche.storage.set('anons', state.anons); render();
                         };
                     }
                     else if (state.view === 'set') {
                         body.innerHTML = `
-                            <div class="ws-card">
-                                <div class="ws-title">空间控制台</div>
-                                <div class="ws-row"><span>模式</span><select id="s-mode"><option value="immediate" ${state.config.mode==='immediate'?'selected':''}>及时回复</option><option value="background" ${state.config.mode==='background'?'selected':''}>后台惊喜</option></select></div>
-                                <div class="ws-row"><span>检测频率(分)</span><input type="number" id="s-int" value="${state.config.interval}" style="width:50px;"></div>
-                                <div class="ws-row"><span>背景URL</span><input type="text" id="s-bg" value="${state.bg}" style="width:120px;"></div>
-                                <div class="ws-row"><span>手写字体URL</span><input type="text" id="s-font" value="${state.font}" style="width:120px;"></div>
-                                <button class="ws-btn" style="width:100%; margin-top:20px;" id="s-save">应用更改</button>
-                                <button class="ws-btn" style="width:100%; margin-top:10px; background:#999;" onclick="roche.ui.closeApp()">退出空间</button>
-                                <button class="ws-btn" style="width:100%; margin-top:10px; background:#e74c3c;" onclick="if(confirm('重置将清空所有日记！')){roche.storage.delete('diaries');location.reload();}">清空数据</button>
+                            <div class="ws-diary-paper">
+                                <div class="ws-title">设置中心</div>
+                                <div style="margin-bottom:15px;">绑定角色 ID: <input id="s-id" value="${state.charId || ''}" style="width:100px;"></div>
+                                <div style="margin-bottom:15px;">背景图 URL: <input id="s-bg" value="${state.bg}" style="width:100px;"></div>
+                                <div style="margin-bottom:15px;">便利贴图 URL: <input id="s-nbg" value="${state.noteBg}" style="width:100px;"></div>
+                                <div style="margin-top:20px; display:flex; flex-direction:column; gap:10px;">
+                                    <button class="ws-btn-primary" id="s-ok">保存设置 (不刷新)</button>
+                                    <button class="ws-btn-grey" onclick="roche.ui.closeApp()">退出空间 (退出插件)</button>
+                                    <button class="ws-btn-grey" style="color:red;" onclick="if(confirm('清空所有数据吗？')){roche.storage.delete('diaries');roche.storage.delete('whispers');roche.storage.delete('anons');location.reload();}">清空数据</button>
+                                </div>
                             </div>
                         `;
-                        body.querySelector('#s-save').onclick = async () => {
-                            state.config.mode = body.querySelector('#s-mode').value;
-                            state.config.interval = parseInt(body.querySelector('#s-int').value);
+                        body.querySelector('#s-ok').onclick = async () => {
+                            state.charId = body.querySelector('#s-id').value;
                             state.bg = body.querySelector('#s-bg').value;
-                            state.font = body.querySelector('#s-font').value;
-                            await roche.storage.set('config', state.config);
+                            state.noteBg = body.querySelector('#s-nbg').value;
+                            await roche.storage.set('boundCharId', state.charId);
                             await roche.storage.set('bgUrl', state.bg);
-                            await roche.storage.set('fontUrl', state.font);
-                            roche.ui.toast("保存成功，重新加载中...");
-                            location.reload();
+                            await roche.storage.set('noteBgUrl', state.noteBg);
+                            roche.ui.toast("设置已保存 (。・ω・。) ");
+                            render();
                         };
                     }
                 };
 
-                refresh();
+                render();
             },
             async unmount(container) { container.replaceChildren(); }
         }]
-    };
-
-    window.RochePlugin.register(plugin);
+    });
 })();
