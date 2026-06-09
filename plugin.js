@@ -153,10 +153,10 @@
                                     <span class="ws-nav-icon">ｏ◡ｏ</span><span class="ws-nav-text">私语</span>
                                 </div>
                                 <div class="ws-nav-item ${state.view==='anon'?'active':''}" onclick="window._wsV('anon')">
-                                    <span class="ws-nav-icon">( 📮 )</span><span class="ws-nav-text">信箱</span>
+                                    <span class="ws-nav-icon">( (｡ì _ í｡) )</span><span class="ws-nav-text">信箱</span>
                                 </div>
                                 <div class="ws-nav-item ${state.view==='set'?'active':''}" onclick="window._wsV('set')">
-                                    <span class="ws-nav-icon">( ⚙️ )</span><span class="ws-nav-text">设置</span>
+                                    <span class="ws-nav-icon">( ꔷ × ꔷ )</span><span class="ws-nav-text">设置</span>
                                 </div>
                             </div>
                         </div>
