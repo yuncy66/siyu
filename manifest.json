@@ -1,17 +1,15 @@
 {
-  "id": "whisper-space-pro",
-  "name": "私语空间 Pro",
-  "version": "2.1.0",
-  "description": "高颜值交换日记。支持读取100条对话记忆，后台自主生成心事、匿名信与悄悄话。",
-  "author": "Roche Assistant",
+  "id": "whisper-space-v4",
+  "name": "私语空间·手帐版",
+  "version": "4.0.0",
+  "description": "具有实体书翻页感的交换日记。支持角色自主行为、涂改痕迹、匿名信箱及记忆互通。",
+  "author": "Roche Plugin Assistant",
   "entry": "https://raw.githubusercontent.com/yuncy66/siyu/main/plugin.js",
-  "hash": "",
   "permissions": [
     "persona:read",
     "character:read",
     "memory:read",
     "memory:write",
-    "conversation:read",
     "ai:chat",
     "storage",
     "ui"
