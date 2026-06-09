@@ -1,0 +1,19 @@
+{
+  "id": "siyu-plugin",
+  "name": "私语空间",
+  "version": "1.0.0",
+  "description": "交换日记 · 悄悄话 · 匿名提问箱",
+  "author": "云云",
+  "entry": "https://raw.githubusercontent.com/yuncy66/siyu/main/plugin.js",
+  "hash": "",
+  "permissions": [
+    "persona:read",
+    "character:read",
+    "memory:read",
+    "memory:write",
+    "worldbook:read",
+    "ai:chat",
+    "storage",
+    "ui"
+  ]
+}
